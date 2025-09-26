@@ -1,6 +1,6 @@
 <?php
 // Path to fake log file
-$logfile = __DIR__ . "/logs/fake_access.log";
+$logfile = __DIR__ . "/logs/access.log";
 
 // Ensure logs/ exists
 if (!is_dir(__DIR__ . "/logs")) {
