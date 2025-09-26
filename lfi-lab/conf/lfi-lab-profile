@@ -1,0 +1,63 @@
+#include <tunables/global>
+
+profile lfi-lab-profile flags=(attach_disconnected, mediate_deleted) {
+
+  # base: basic permissions (proc reads, etc.)
+  # nameservice: /etc/hosts, resolv.conf, NSS
+  # user-tmp: temp usage
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  # Networking (no raw)
+  network inet stream,
+  network inet dgram,
+
+  # Specific Linux capabilities you actually need (binding 80, dropping privs)
+  capability net_bind_service,
+  capability setuid,
+  capability setgid,
+
+  # Device nodes commonly used
+  /dev/null        rw,
+  /dev/zero        r,
+  /dev/urandom     r,
+  /dev/random      r,
+  /dev/tty         rw,
+
+  # Allow executing only common system binaries (inherit env; restrict surface)
+  /bin/**              mrix,
+  /sbin/**             mrix,
+  /usr/bin/**          mrix,
+  /usr/sbin/**         mrix,
+  /usr/local/bin/**    mrix,
+  /usr/local/sbin/**   mrix,
+
+  # Apache + libs/configs (read/execute as needed)
+  /usr/sbin/apache2ctl     rix,
+  /usr/sbin/apache2        rix,
+  /lib/**                  mr,
+  /lib64/**                mr,
+  /usr/lib/**              mr,
+  /usr/lib/apache2/**      mr,
+  /etc/**                  r,
+  /etc/apache2/**          r,
+
+  # Runtime writable dirs (make sure these exist & are writable via tmpfs/binds)
+  /run/apache2/**          rwk,
+  /var/log/apache2/	   rwk,
+  /var/log/apache2/**      rwk,
+  /tmp/**                  rwk,
+
+  # Your site (read-only) and its logs dir (writable)
+  /var/www/html/lfi-lab/         r,
+  /var/www/html/lfi-lab/**       r,
+  /var/www/html/lfi-lab/logs/    rwk,	
+  /var/www/html/lfi-lab/logs/**  rwk,
+
+  /home/         		r,
+  /home/**       		r,
+  
+  # Proc info (read)
+  /proc/**                 r,
+}
+

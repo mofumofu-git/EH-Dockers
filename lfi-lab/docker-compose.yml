@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+    image: lfi-lab:latest
+    container_name: lfi-lab-user1
+
+
+    # Run as www-data (Deb/Ubuntu)
+    user: "33:33"
+
+
+    # Host 8080 -> container 8080 (no privileged port, no caps)
+    ports:
+      - "8080:8080"
+
+
+    # Keep rootfs read-only; only specific paths are writable
+    read_only: true
+
+
+    volumes:
+      # Site code (read-only)
+      - type: bind
+        source: ./site
+        target: /var/www/html/lfi-lab
+        read_only: true
+
+
+      # App logs dir only (writeable)
+      - type: bind
+        source:  ./site/logs
+        target: /var/www/html/lfi-lab/logs
+        read_only: false
+
+
+      # Apache conf already set to 8080
+      - type: bind
+        source: ./conf/ports.conf
+        target: /etc/apache2/ports.conf
+        read_only: true
+      - type: bind
+        source: ./conf/000-default.conf
+        target: /etc/apache2/sites-enabled/000-default.conf
+        read_only: true
+
+      - type: bind
+        source: ./container1
+        target: /home/user1
+        read_only: true      # ← read-only home
+    
+    # Writable runtime dirs owned by www-data
+    tmpfs:
+      - /run/apache2:size=8m,mode=0755,uid=33,gid=33
+      - /var/log/apache2:size=16m,mode=0755,uid=33,gid=33
+      - /tmp:size=32m,mode=1777,uid=33,gid=33
+
+    # php:8.3-apache entrypoint will exec this command
+    command: ["apache2-foreground"]
+
+    working_dir: /var/www/html/lfi-lab
+    restart: unless-stopped
+
+    # Harden: drop ALL caps; keep AppArmor
+    cap_drop: ["ALL"]
+    security_opt:
+      - apparmor=lfi-lab-profile
+      - no-new-privileges:true
+
