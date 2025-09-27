@@ -1,0 +1,3 @@
+Hi, please run the execute to login, thanks.
+
+Btw, i have downloaded socat since u were having issues with netcat for remoting out from this machine
