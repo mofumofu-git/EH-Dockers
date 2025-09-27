@@ -1,0 +1,75 @@
+#include <tunables/global>
+
+profile upload-file-profile flags=(attach_disconnected, mediate_deleted) {
+
+  # Baselines
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  # Networking (no raw)
+  network inet stream,
+  network inet dgram,
+  deny network raw,
+
+  # Minimal caps (port 27465 > 1024; no net_bind_service needed)
+  capability setuid,
+  capability setgid,
+
+  # Devices
+  /dev/null        rw,
+  /dev/zero        r,
+  /dev/urandom     r,
+  /dev/random      r,
+  /dev/tty         rw,
+
+  # ===== EXEC allowlist (what the image actually runs) =====
+  /usr/local/bin/docker-php-entrypoint  mrix,
+  /usr/local/bin/apache2-foreground     mrix,
+  /usr/sbin/apache2                     mrix,
+  /usr/sbin/apache2ctl                  mrix,
+  /bin/sh                               mrix,
+  /bin/dash                             mrix,
+  /bin/bash                             mrix,
+  /usr/bin/env                          mrix,
+  /usr/bin/dirname			mrix,
+  /usr/bin/mkdir			mrix,
+
+  # Allowed apache2-foreground and user commands
+  /usr/bin/**  				mrix,
+  /bin/**      				mrix,
+  /usr/sbin/** 				mrix,
+  
+
+  # System libs/config
+  /lib/**                  mr,
+  /lib64/**                mr,
+  /usr/lib/**              mr,
+  /usr/lib/apache2/**      mr,
+  /etc/**                  r,
+  /etc/apache2/**          r,
+  /etc/apache2/.htpasswd   r,
+
+  # Website folder permissions
+  /var/www/html/           r,
+  /var/www/html/**         r,
+  /home/**		   r,
+  /home/			   r,
+
+  # Writable app dirs
+  /var/www/html/uploads/    rwk,
+  /var/www/html/uploads/**  rwk,
+  /var/www/html/logs/       rwk,
+  /var/www/html/logs/**     rwk,
+
+  # Runtime + logging (include 'l' so ln can create symlinks to stdout/stderr)
+  /run/apache2/**           rwkl,
+  /var/log/apache2/         rwkl,
+  /var/log/apache2/**       rwkl,
+  /tmp/**                   rwk,
+
+
+
+  # Proc (for /proc/self/fd symlink targets and general reads)
+  /proc/**                  r,
+}
+
