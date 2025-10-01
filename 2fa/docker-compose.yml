@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+    image: 2fa:latest
+    container_name: 2fa
+
+    # Run unprivileged & hardened
+    user: "33:33"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:false
+      - apparmor=2fa-profile  
+
+    ports:
+      - "65530:80"                  # host:container
+
+    # Binds: code RO; uploads/logs RW; apache conf RO; .htpasswd RO
+    volumes:
+      - type: bind
+        source: ./site
+        target: /var/www/html
+        read_only: true
+
+      - type: bind
+        source: ./site/tmp
+        target: /var/www/html/tmp
+        read_only: true
+
+      - type: bind
+        source: ./conf/ports.conf
+        target: /etc/apache2/ports.conf
+        read_only: true
+
+      - type: bind
+        source: ./conf/000-default.conf
+        target: /etc/apache2/sites-available/000-default.conf
+        read_only: true
+
+      - type: bind
+        source: ./conf/.htpasswd
+        target: /etc/apache2/.htpasswd
+        read_only: true
+
+      - type: bind
+        source: /home/user1/canary-64
+        target: /home/user1
+        read_only: true      # ← read-only home
+
+
+    # Writable runtime dirs in memory
+    tmpfs:
+      - /run/apache2:size=8m,mode=0755,uid=33,gid=33
+      - /var/log/apache2:size=16m,mode=0755,uid=33,gid=33
+      - /tmp:size=32m,mode=1777,uid=33,gid=33
+
+    working_dir: /var/www/html
+    restart: unless-stopped
+
